@@ -246,7 +246,9 @@ export default function LiveBattleLeaderboard() {
                   <div className="font-semibold text-white flex items-center gap-2">
                     {entry.name}
                     {entry.verified && (
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" title="AI Verified" />
+                      <span title="AI Verified">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      </span>
                     )}
                   </div>
                   <div className="text-xs text-slate-400">{entry.campus}</div>
