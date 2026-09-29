@@ -9,15 +9,23 @@ import {
   TrendingUp,
   Award,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  Compass
 } from 'lucide-react';
 import CameraWorkoutEngine from '@/components/CameraWorkoutEngine';
 import CoachDashboard from '@/components/CoachDashboard';
 import LiveBattleLeaderboard from '@/components/LiveBattleLeaderboard';
 import WearablesSyncHub from '@/components/WearablesSyncHub';
 import DynamicETACalculator from '@/components/DynamicETACalculator';
+import IndiaTalentMap from '@/components/IndiaTalentMap';
 
-type ActiveTab = 'CAMERA_VISION' | 'SCOUTING_DASHBOARD' | 'LIVE_BATTLES' | 'WEARABLES_SYNC' | 'DYNAMIC_ETA';
+type ActiveTab =
+  | 'CAMERA_VISION'
+  | 'SCOUTING_DASHBOARD'
+  | 'LIVE_BATTLES'
+  | 'WEARABLES_SYNC'
+  | 'DYNAMIC_ETA'
+  | 'INDIA_TALENT_MAP';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('CAMERA_VISION');
@@ -35,7 +43,7 @@ export default function Home() {
             AI-Powered Biometrics & <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-400 to-emerald-400">National Talent Scouting</span>
           </h1>
           <p className="mt-3 text-sm md:text-base text-slate-300 leading-relaxed">
-            Turn standard webcams and mobile phones into certified athletic testing stations. Fusing computer vision pose validation with wearable heart rate and GPS telemetry to identify the next generation of Indian sports champions.
+            Turn standard webcams and mobile phones into certified athletic testing stations. Fusing computer vision pose validation with wearable heart rate, Voice AI coaching, and GPS telemetry to identify the next generation of Indian sports champions.
           </p>
         </div>
 
@@ -43,7 +51,7 @@ export default function Home() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800/80">
           <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
             <div className="text-xs text-slate-400">Camera Engine</div>
-            <div className="text-sm font-bold text-white mt-0.5">MediaPipe 33 3D</div>
+            <div className="text-sm font-bold text-white mt-0.5">MediaPipe + Voice AI</div>
           </div>
           <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
             <div className="text-xs text-slate-400">Anti-Cheat Fusion</div>
@@ -54,8 +62,8 @@ export default function Home() {
             <div className="text-sm font-bold text-amber-400 mt-0.5">5-25y Centiles</div>
           </div>
           <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
-            <div className="text-xs text-slate-400">Live Battles</div>
-            <div className="text-sm font-bold text-blue-400 mt-0.5">1v1 UFP Arena</div>
+            <div className="text-xs text-slate-400">Multiplayer & Ghost</div>
+            <div className="text-sm font-bold text-blue-400 mt-0.5">1v1 & P90 Ghost Race</div>
           </div>
         </div>
       </section>
@@ -71,7 +79,7 @@ export default function Home() {
           }`}
         >
           <Camera className="w-4 h-4" />
-          AI Camera Workout & Tests
+          AI Camera & Voice Coach
         </button>
 
         <button
@@ -87,6 +95,18 @@ export default function Home() {
         </button>
 
         <button
+          onClick={() => setActiveTab('INDIA_TALENT_MAP')}
+          className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
+            activeTab === 'INDIA_TALENT_MAP'
+              ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent'
+          }`}
+        >
+          <Compass className="w-4 h-4" />
+          National Talent Map & Olympic AI
+        </button>
+
+        <button
           onClick={() => setActiveTab('LIVE_BATTLES')}
           className={`px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
             activeTab === 'LIVE_BATTLES'
@@ -95,7 +115,7 @@ export default function Home() {
           }`}
         >
           <Swords className="w-4 h-4" />
-          1v1 Live Battles & Leaderboard
+          1v1 Battles & Ghost Rivals
         </button>
 
         <button
@@ -127,6 +147,7 @@ export default function Home() {
       <div className="transition-all duration-200">
         {activeTab === 'CAMERA_VISION' && <CameraWorkoutEngine />}
         {activeTab === 'SCOUTING_DASHBOARD' && <CoachDashboard />}
+        {activeTab === 'INDIA_TALENT_MAP' && <IndiaTalentMap />}
         {activeTab === 'LIVE_BATTLES' && <LiveBattleLeaderboard />}
         {activeTab === 'WEARABLES_SYNC' && <WearablesSyncHub />}
         {activeTab === 'DYNAMIC_ETA' && <DynamicETACalculator />}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Swords,
   Trophy,
@@ -9,7 +9,10 @@ import {
   Zap,
   Users,
   Timer,
-  ChevronRight
+  ChevronRight,
+  Ghost,
+  Play,
+  RotateCcw
 } from 'lucide-react';
 
 export interface BattleParticipant {
@@ -69,18 +72,61 @@ const LEADERBOARD_DATA = [
   { rank: 5, name: 'Ananya Nair', campus: 'St. Thomas Kerala', points: 2840, streak: 6, verified: false },
 ];
 
+const GHOST_PRESETS = [
+  { id: 'p90', name: 'Khelo India P90 Benchmark', targetReps: 44, activity: 'Push-ups', cadence: 1.35 },
+  { id: 'record', name: 'SAI National Record Ghost', targetReps: 58, activity: 'Push-ups', cadence: 1.02 },
+  { id: 'hostel', name: 'Hostel 4 Rival Record', targetReps: 36, activity: 'Squats', cadence: 1.66 },
+];
+
 export default function LiveBattleLeaderboard() {
   const [battle] = useState<LiveBattleSession>(SAMPLE_BATTLE);
-  const [activeTab, setActiveTab] = useState<'LIVE_BATTLE' | 'LEADERBOARD'>('LIVE_BATTLE');
+  const [activeTab, setActiveTab] = useState<'LIVE_BATTLE' | 'GHOST_ARENA' | 'LEADERBOARD'>('LIVE_BATTLE');
+
+  // Ghost Rival State
+  const [selectedGhost, setSelectedGhost] = useState(GHOST_PRESETS[0]);
+  const [ghostReps, setGhostReps] = useState<number>(0);
+  const [userReps, setUserReps] = useState<number>(0);
+  const [ghostRaceActive, setGhostRaceActive] = useState<boolean>(false);
+  const [ghostTimer, setGhostTimer] = useState<number>(60);
+
+  // Ghost Race Simulation
+  useEffect(() => {
+    let interval: any = null;
+    if (ghostRaceActive && ghostTimer > 0) {
+      interval = setInterval(() => {
+        setGhostTimer((t) => {
+          if (t <= 1) {
+            setGhostRaceActive(false);
+            return 0;
+          }
+          return t - 1;
+        });
+
+        // Increment ghost based on target pace
+        setGhostReps((prev) => {
+          const expectedAtTime = Math.round(((60 - ghostTimer) / 60) * selectedGhost.targetReps);
+          return Math.min(selectedGhost.targetReps, expectedAtTime);
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [ghostRaceActive, ghostTimer, selectedGhost]);
+
+  const handleStartGhostRace = () => {
+    setGhostTimer(60);
+    setGhostReps(0);
+    setUserReps(0);
+    setGhostRaceActive(true);
+  };
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl text-slate-100">
       {/* Tab Switcher */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
-        <div className="flex gap-2">
+      <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 mb-6 gap-3">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab('LIVE_BATTLE')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${
+            className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold flex items-center gap-1.5 transition-all ${
               activeTab === 'LIVE_BATTLE'
                 ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -91,8 +137,20 @@ export default function LiveBattleLeaderboard() {
           </button>
 
           <button
+            onClick={() => setActiveTab('GHOST_ARENA')}
+            className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold flex items-center gap-1.5 transition-all ${
+              activeTab === 'GHOST_ARENA'
+                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Ghost className="w-4 h-4 text-purple-400" />
+            Ghost Rival Mode
+          </button>
+
+          <button
             onClick={() => setActiveTab('LEADERBOARD')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${
+            className={`px-3.5 py-2 rounded-lg text-xs md:text-sm font-bold flex items-center gap-1.5 transition-all ${
               activeTab === 'LEADERBOARD'
                 ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
@@ -129,7 +187,6 @@ export default function LiveBattleLeaderboard() {
 
           {/* 1v1 Split Screen Arena */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-            {/* VS Badge in Center */}
             <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-orange-600 text-white font-black text-sm items-center justify-center border-4 border-slate-900 shadow-xl z-10">
               VS
             </div>
@@ -156,7 +213,6 @@ export default function LiveBattleLeaderboard() {
                 </div>
               </div>
 
-              {/* Rep Counter / Form Feedback */}
               <div className="mt-6 flex items-center justify-between bg-slate-900/80 p-3 rounded-lg border border-slate-800">
                 <div>
                   <div className="text-xs text-slate-400">Valid Reps</div>
@@ -198,7 +254,6 @@ export default function LiveBattleLeaderboard() {
                 </div>
               </div>
 
-              {/* Rep Counter / Form Feedback */}
               <div className="mt-6 flex items-center justify-between bg-slate-900/80 p-3 rounded-lg border border-slate-800">
                 <div>
                   <div className="text-xs text-slate-400">Valid Reps</div>
@@ -216,6 +271,123 @@ export default function LiveBattleLeaderboard() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'GHOST_ARENA' ? (
+        /* Ghost Rival Mode */
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 gap-4">
+            <div>
+              <span className="text-xs uppercase font-bold text-purple-400 tracking-wider">
+                Asynchronous Matchmaking
+              </span>
+              <h3 className="text-xl font-black text-white">Ghost Rival AI Racing Arena</h3>
+              <p className="text-xs text-slate-400">
+                Race in real-time against recorded benchmark avatars of state champions and national percentiles.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {GHOST_PRESETS.map((ghost) => (
+                <button
+                  key={ghost.id}
+                  onClick={() => {
+                    setSelectedGhost(ghost);
+                    setGhostRaceActive(false);
+                    setGhostReps(0);
+                    setUserReps(0);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    selectedGhost.id === ghost.id
+                      ? 'bg-purple-600 text-white shadow-md'
+                      : 'bg-slate-950 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {ghost.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Race Track HUD */}
+          <div className="bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-6">
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-bold text-slate-300">
+                Target: {selectedGhost.targetReps} Reps ({selectedGhost.activity}) in 60s
+              </span>
+              <span className="text-amber-400 font-mono text-sm font-bold">
+                Time Remaining: {ghostTimer}s
+              </span>
+            </div>
+
+            {/* Ghost Lane */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="font-bold text-purple-400 flex items-center gap-1.5">
+                  <Ghost className="w-3.5 h-3.5" />
+                  {selectedGhost.name}
+                </span>
+                <span className="font-bold text-white">{ghostReps} / {selectedGhost.targetReps} reps</span>
+              </div>
+              <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-purple-500/30">
+                <div
+                  className="h-full bg-gradient-to-r from-purple-600 to-indigo-500 transition-all duration-300"
+                  style={{ width: `${Math.min(100, (ghostReps / selectedGhost.targetReps) * 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* You (Player) Lane */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="font-bold text-orange-400 flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5" />
+                  You (Live Athlete)
+                </span>
+                <span className="font-bold text-white">{userReps} / {selectedGhost.targetReps} reps</span>
+              </div>
+              <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-orange-500/30">
+                <div
+                  className="h-full bg-gradient-to-r from-orange-500 to-amber-400 transition-all duration-300"
+                  style={{ width: `${Math.min(100, (userReps / selectedGhost.targetReps) * 100)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setUserReps((r) => r + 1)}
+                  disabled={!ghostRaceActive}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs rounded-lg transition-all"
+                >
+                  +1 Valid Rep Completed
+                </button>
+                <button
+                  onClick={() => setUserReps((r) => Math.max(0, r - 1))}
+                  disabled={!ghostRaceActive}
+                  className="px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 text-xs rounded-lg"
+                >
+                  -1
+                </button>
+              </div>
+
+              {!ghostRaceActive ? (
+                <button
+                  onClick={handleStartGhostRace}
+                  className="px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-orange-600/25 transition-all"
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" /> Start Ghost Challenge
+                </button>
+              ) : (
+                <button
+                  onClick={() => setGhostRaceActive(false)}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> End Race
+                </button>
+              )}
             </div>
           </div>
         </div>

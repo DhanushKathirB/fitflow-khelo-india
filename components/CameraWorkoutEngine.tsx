@@ -12,9 +12,16 @@ import {
   Award,
   Video,
   Sparkles,
-  Zap
+  Zap,
+  Volume2,
+  VolumeX,
+  QrCode,
+  HeartPulse
 } from 'lucide-react';
 import { PoseAnalyzer, Landmark3D, POSE_LANDMARKS } from '@/lib/vision/poseAnalyzer';
+import { globalVoiceCoach } from '@/lib/audio/voiceCoach';
+import { AsymmetryDetector, AsymmetryReport } from '@/lib/vision/asymmetryDetector';
+import TalentPassportModal from '@/components/TalentPassportModal';
 
 type ExerciseType = 'pushup' | 'squat' | 'vertical_jump' | 'shuttle_run';
 
@@ -23,6 +30,7 @@ export default function CameraWorkoutEngine() {
   const [isExercising, setIsExercising] = useState<boolean>(false);
   const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
   const [simMode, setSimMode] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Stats from PoseAnalyzer
   const [validReps, setValidReps] = useState<number>(0);
@@ -36,11 +44,26 @@ export default function CameraWorkoutEngine() {
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Biomechanical Asymmetry Report
+  const [asymmetryReport, setAsymmetryReport] = useState<AsymmetryReport | null>(null);
+
+  // Passport Modal State
+  const [showPassport, setShowPassport] = useState<boolean>(false);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const analyzerRef = useRef<PoseAnalyzer>(new PoseAnalyzer(172));
+  const asymmetryDetectorRef = useRef<AsymmetryDetector>(new AsymmetryDetector());
   const simTimerRef = useRef<NodeJS.Timeout | null>(null);
   const workoutTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const prevValidRepsRef = useRef<number>(0);
+
+  // Toggle Voice Coach
+  const toggleMute = () => {
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    globalVoiceCoach.setMuted(nextMuted);
+  };
 
   // Initialize or reset analyzer
   const handleReset = useCallback(() => {
@@ -52,14 +75,23 @@ export default function CameraWorkoutEngine() {
     setShuttleSplits(0);
     setElapsedSeconds(0);
     setVerificationResult(null);
+    setAsymmetryReport(null);
+    prevValidRepsRef.current = 0;
     setFormFeedback('Ready for test. Position full body in frame.');
   }, []);
 
   // Timer
   useEffect(() => {
     if (isExercising) {
+      globalVoiceCoach.playWhistle();
+      globalVoiceCoach.speak('Test started! Maintain full depth.', true);
       workoutTimerRef.current = setInterval(() => {
-        setElapsedSeconds((prev) => prev + 1);
+        setElapsedSeconds((prev) => {
+          const next = prev + 1;
+          if (next === 30) globalVoiceCoach.speak('Halfway mark! Keep the cadence up.');
+          if (next === 50) globalVoiceCoach.speak('Ten seconds left! Final push.');
+          return next;
+        });
       }, 1000);
     } else {
       if (workoutTimerRef.current) clearInterval(workoutTimerRef.current);
@@ -68,6 +100,15 @@ export default function CameraWorkoutEngine() {
       if (workoutTimerRef.current) clearInterval(workoutTimerRef.current);
     };
   }, [isExercising]);
+
+  // Audio Voice trigger when valid reps increment
+  useEffect(() => {
+    if (validReps > prevValidRepsRef.current && isExercising) {
+      globalVoiceCoach.playRepSuccessChime();
+      globalVoiceCoach.speak(`${validReps}`, true);
+      prevValidRepsRef.current = validReps;
+    }
+  }, [validReps, isExercising]);
 
   // Start real webcam stream
   const startCamera = async () => {
@@ -83,7 +124,7 @@ export default function CameraWorkoutEngine() {
       }
     } catch (err) {
       console.warn('Webcam permission not granted or device unavailable. Enabling simulation mode.', err);
-      setFormFeedback('Camera not accessible. Using AI Simulation Mode.');
+      setFormFeedback('Camera not accessible. Using AI Kinematic Simulation.');
       setSimMode(true);
       setIsCameraActive(true);
     }
@@ -110,12 +151,10 @@ export default function CameraWorkoutEngine() {
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw background grid if in simulation
       if (simMode) {
         ctx.fillStyle = '#090d16';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Grid lines
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 1;
         for (let x = 0; x < canvas.width; x += 40) {
@@ -132,7 +171,7 @@ export default function CameraWorkoutEngine() {
         }
       }
 
-      // Draw Landmark Points
+      // Landmarks
       landmarks.forEach((pt, index) => {
         const px = pt.x * canvas.width;
         const py = pt.y * canvas.height;
@@ -146,7 +185,6 @@ export default function CameraWorkoutEngine() {
         ctx.stroke();
       });
 
-      // Connect Key Limbs
       const connect = (idxA: number, idxB: number, color = '#38bdf8') => {
         const pA = landmarks[idxA];
         const pB = landmarks[idxB];
@@ -159,7 +197,6 @@ export default function CameraWorkoutEngine() {
         ctx.stroke();
       };
 
-      // Torso & Limbs
       connect(POSE_LANDMARKS.LEFT_SHOULDER, POSE_LANDMARKS.RIGHT_SHOULDER);
       connect(POSE_LANDMARKS.LEFT_SHOULDER, POSE_LANDMARKS.LEFT_ELBOW, '#f97316');
       connect(POSE_LANDMARKS.LEFT_ELBOW, POSE_LANDMARKS.LEFT_WRIST, '#f97316');
@@ -167,15 +204,14 @@ export default function CameraWorkoutEngine() {
       connect(POSE_LANDMARKS.LEFT_HIP, POSE_LANDMARKS.LEFT_KNEE, '#f59e0b');
       connect(POSE_LANDMARKS.LEFT_KNEE, POSE_LANDMARKS.LEFT_ANKLE, '#f59e0b');
 
-      // Joint Angle HUD Label
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 16px monospace';
+      ctx.font = 'bold 15px monospace';
       ctx.fillText(angleText, 20, 35);
     },
     [simMode]
   );
 
-  // Simulation Loop: Generates realistic human kinematic frames
+  // Simulation loop with asymmetry evaluation
   useEffect(() => {
     if (!isExercising || !simMode) return;
 
@@ -183,20 +219,21 @@ export default function CameraWorkoutEngine() {
     const interval = setInterval(() => {
       simCycle += 0.08;
       const t = simCycle;
-
-      // Base standing frame (33 landmarks)
       const mockLandmarks: Landmark3D[] = Array(33).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
 
       if (exercise === 'squat') {
-        // Squat cycle: knee flexes from 170° down to 80° then back up
-        const flexionFactor = (Math.sin(t) + 1) / 2; // 0 to 1
+        const flexionFactor = (Math.sin(t) + 1) / 2;
         const kneeY = 0.65;
-        const hipY = 0.45 + flexionFactor * 0.18; // Hip drops
+        const hipY = 0.45 + flexionFactor * 0.18;
 
-        mockLandmarks[POSE_LANDMARKS.LEFT_SHOULDER] = { x: 0.5, y: 0.25 + flexionFactor * 0.12, z: 0 };
-        mockLandmarks[POSE_LANDMARKS.LEFT_HIP] = { x: 0.5, y: hipY, z: 0 };
-        mockLandmarks[POSE_LANDMARKS.LEFT_KNEE] = { x: 0.52, y: kneeY, z: 0 };
-        mockLandmarks[POSE_LANDMARKS.LEFT_ANKLE] = { x: 0.5, y: 0.85, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.LEFT_SHOULDER] = { x: 0.48, y: 0.25 + flexionFactor * 0.12, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.RIGHT_SHOULDER] = { x: 0.52, y: 0.25 + flexionFactor * 0.12, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.LEFT_HIP] = { x: 0.47, y: hipY, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.RIGHT_HIP] = { x: 0.53, y: hipY, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.LEFT_KNEE] = { x: 0.47, y: kneeY, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.RIGHT_KNEE] = { x: 0.53, y: kneeY, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.LEFT_ANKLE] = { x: 0.46, y: 0.85, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.RIGHT_ANKLE] = { x: 0.54, y: 0.85, z: 0 };
 
         const feedback = analyzerRef.current.analyzeSquat(mockLandmarks);
         setValidReps(feedback.validReps);
@@ -204,17 +241,29 @@ export default function CameraWorkoutEngine() {
         setCurrentAngle(feedback.jointAngle);
         setFormFeedback(feedback.formFeedback);
         setIsFormValid(feedback.isCurrentRepValid);
-        drawSkeleton(mockLandmarks, `Knee Angle: ${feedback.jointAngle}° | Depth: ${feedback.jointAngle < 90 ? 'OK' : 'HIGH'}`);
+
+        // Biomechanical asymmetry check
+        const asym = asymmetryDetectorRef.current.analyzeSquatKinematics(
+          mockLandmarks,
+          (a, b, c) => analyzerRef.current.calculateAngle(a, b, c)
+        );
+        setAsymmetryReport(asym);
+
+        drawSkeleton(mockLandmarks, `Knee: ${feedback.jointAngle}° | Symmetry: ${asym.symmetryScorePct}%`);
       } else if (exercise === 'pushup') {
-        // Pushup cycle: elbow flexes from 170° to 85°
         const flexionFactor = (Math.sin(t) + 1) / 2;
         const chestY = 0.5 + flexionFactor * 0.12;
 
         mockLandmarks[POSE_LANDMARKS.LEFT_SHOULDER] = { x: 0.35, y: chestY, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.RIGHT_SHOULDER] = { x: 0.37, y: chestY, z: 0 };
         mockLandmarks[POSE_LANDMARKS.LEFT_ELBOW] = { x: 0.32, y: chestY - 0.06 * flexionFactor, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.RIGHT_ELBOW] = { x: 0.34, y: chestY - 0.06 * flexionFactor, z: 0 };
         mockLandmarks[POSE_LANDMARKS.LEFT_WRIST] = { x: 0.35, y: 0.68, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.RIGHT_WRIST] = { x: 0.37, y: 0.68, z: 0 };
         mockLandmarks[POSE_LANDMARKS.LEFT_HIP] = { x: 0.55, y: chestY + 0.02, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.RIGHT_HIP] = { x: 0.57, y: chestY + 0.02, z: 0 };
         mockLandmarks[POSE_LANDMARKS.LEFT_ANKLE] = { x: 0.82, y: 0.68, z: 0 };
+        mockLandmarks[POSE_LANDMARKS.RIGHT_ANKLE] = { x: 0.84, y: 0.68, z: 0 };
 
         const feedback = analyzerRef.current.analyzePushup(mockLandmarks);
         setValidReps(feedback.validReps);
@@ -222,12 +271,16 @@ export default function CameraWorkoutEngine() {
         setCurrentAngle(feedback.jointAngle);
         setFormFeedback(feedback.formFeedback);
         setIsFormValid(feedback.isCurrentRepValid);
-        drawSkeleton(mockLandmarks, `Elbow Angle: ${feedback.jointAngle}° | Alignment: OK`);
-      } else if (exercise === 'vertical_jump') {
-        // Jump cycle: crouch -> ballistic airborne -> landing
-        const phase = (Math.sin(t) + 1) / 2;
-        const jumpDisplacement = Math.max(0, Math.sin(t * 1.5)) * 0.18;
 
+        const asym = asymmetryDetectorRef.current.analyzePushupKinematics(
+          mockLandmarks,
+          (a, b, c) => analyzerRef.current.calculateAngle(a, b, c)
+        );
+        setAsymmetryReport(asym);
+
+        drawSkeleton(mockLandmarks, `Elbow: ${feedback.jointAngle}° | Symmetry: ${asym.symmetryScorePct}%`);
+      } else if (exercise === 'vertical_jump') {
+        const jumpDisplacement = Math.max(0, Math.sin(t * 1.5)) * 0.18;
         mockLandmarks[POSE_LANDMARKS.LEFT_SHOULDER] = { x: 0.5, y: 0.35 - jumpDisplacement, z: 0 };
         mockLandmarks[POSE_LANDMARKS.LEFT_HIP] = { x: 0.5, y: 0.55 - jumpDisplacement, z: 0 };
         mockLandmarks[POSE_LANDMARKS.RIGHT_HIP] = { x: 0.52, y: 0.55 - jumpDisplacement, z: 0 };
@@ -236,10 +289,9 @@ export default function CameraWorkoutEngine() {
         const jumpMetric = analyzerRef.current.analyzeVerticalJump(mockLandmarks, Date.now());
         setJumpHeightCm(jumpMetric.estimatedJumpCm);
         setCurrentAngle(Math.round(jumpMetric.maxDisplacementNormalized * 100));
-        setFormFeedback(jumpMetric.isJumping ? 'AIRBORNE! Tracking apex...' : 'Leap explosive upward!');
-        drawSkeleton(mockLandmarks, `Jump Height: ${jumpMetric.estimatedJumpCm} cm | Flight: ${jumpMetric.flightTimeMs}ms`);
+        setFormFeedback(jumpMetric.isJumping ? 'AIRBORNE! Tracking apex...' : 'Explode upward on the whistle!');
+        drawSkeleton(mockLandmarks, `Jump: ${jumpMetric.estimatedJumpCm} cm | Flight: ${jumpMetric.flightTimeMs}ms`);
       } else if (exercise === 'shuttle_run') {
-        // Lateral shuttle crossing
         const posX = 0.5 + Math.sin(t * 0.8) * 0.38;
         mockLandmarks[POSE_LANDMARKS.LEFT_ANKLE] = { x: posX - 0.02, y: 0.85, z: 0 };
         mockLandmarks[POSE_LANDMARKS.RIGHT_ANKLE] = { x: posX + 0.02, y: 0.85, z: 0 };
@@ -273,12 +325,13 @@ export default function CameraWorkoutEngine() {
           totalReps: totalReps || validReps,
           durationSeconds: Math.max(1, elapsedSeconds),
           hasSensorTelemetry: true,
-          sensorHeartRateDelta: 34, // Synchronized mock wearable delta
+          sensorHeartRateDelta: 34,
         }),
       });
 
       const data = await response.json();
       setVerificationResult(data);
+      globalVoiceCoach.speak('Assessment Certified! Official Khelo India verification signature issued.', true);
     } catch (err) {
       console.error('Error submitting assessment', err);
     } finally {
@@ -288,7 +341,7 @@ export default function CameraWorkoutEngine() {
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl text-slate-100">
-      {/* Engine Controls Header */}
+      {/* Controls Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5 mb-6">
         <div>
           <div className="flex items-center gap-2">
@@ -298,34 +351,52 @@ export default function CameraWorkoutEngine() {
             <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase flex items-center gap-1">
               <ShieldCheck className="w-3 h-3" /> Anti-Cheat Form Engine
             </span>
+            <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 uppercase flex items-center gap-1">
+              <HeartPulse className="w-3 h-3" /> Kinematic Asymmetry AI
+            </span>
           </div>
           <h2 className="text-xl md:text-2xl font-black text-white mt-1">
             Real-Time AI Camera Biomechanics
           </h2>
           <p className="text-xs text-slate-400">
-            Calculates 3D joint angles, detects invalid reps (hip sag, shallow depth), and computes vertical power.
+            Calculates 3D joint angles, voice coaches rep counts, and alerts against bilateral asymmetry.
           </p>
         </div>
 
-        {/* Exercise Selector */}
-        <div className="flex flex-wrap gap-2">
-          {(['pushup', 'squat', 'vertical_jump', 'shuttle_run'] as ExerciseType[]).map((ex) => (
-            <button
-              key={ex}
-              onClick={() => {
-                setExercise(ex);
-                handleReset();
-              }}
-              disabled={isExercising}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
-                exercise === ex
-                  ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30'
-                  : 'bg-slate-800 text-slate-400 hover:text-white'
-              }`}
-            >
-              {ex.replace('_', ' ')}
-            </button>
-          ))}
+        {/* Audio Coach Mute Toggle + Exercise Selector */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleMute}
+            className={`p-2 rounded-lg border text-xs font-bold transition-colors flex items-center gap-1.5 ${
+              isMuted
+                ? 'bg-slate-800 border-slate-700 text-slate-400'
+                : 'bg-orange-500/20 border-orange-500/40 text-orange-300'
+            }`}
+            title={isMuted ? 'Unmute Audio Coach' : 'Mute Audio Coach'}
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            <span className="text-[11px] hidden sm:inline">{isMuted ? 'Muted' : 'Audio Coach ON'}</span>
+          </button>
+
+          <div className="flex flex-wrap gap-1.5">
+            {(['pushup', 'squat', 'vertical_jump', 'shuttle_run'] as ExerciseType[]).map((ex) => (
+              <button
+                key={ex}
+                onClick={() => {
+                  setExercise(ex);
+                  handleReset();
+                }}
+                disabled={isExercising}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${
+                  exercise === ex
+                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30'
+                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                {ex.replace('_', ' ')}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -334,7 +405,6 @@ export default function CameraWorkoutEngine() {
         {/* Left: Video / Skeleton Canvas Feed */}
         <div className="lg:col-span-8 flex flex-col">
           <div className="relative aspect-[4/3] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-inner flex items-center justify-center">
-            {/* Real Webcam Video (hidden behind canvas or overlaid) */}
             <video
               ref={videoRef}
               className={`absolute inset-0 w-full h-full object-cover ${!isCameraActive || simMode ? 'hidden' : ''}`}
@@ -342,7 +412,6 @@ export default function CameraWorkoutEngine() {
               muted
             />
 
-            {/* Canvas for Skeletal HUD */}
             <canvas
               ref={canvasRef}
               width={640}
@@ -350,13 +419,12 @@ export default function CameraWorkoutEngine() {
               className="absolute inset-0 w-full h-full object-contain pointer-events-none z-10"
             />
 
-            {/* Empty State before camera or sim starts */}
             {!isCameraActive && (
               <div className="text-center p-6 z-20">
                 <Video className="w-12 h-12 text-slate-600 mx-auto mb-3 animate-pulse" />
                 <h3 className="font-bold text-white text-base">Camera Inactive</h3>
                 <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
-                  Enable your webcam for live tracking, or launch AI Simulation Mode to test algorithmic kinematics immediately.
+                  Enable webcam for live tracking or launch AI Simulation Mode to test kinematics and audio coaching immediately.
                 </p>
                 <div className="flex justify-center gap-3">
                   <button
@@ -454,7 +522,7 @@ export default function CameraWorkoutEngine() {
 
             <button
               onClick={handleSubmitAssessment}
-              disabled={isSubmitting || validReps === 0 && jumpHeightCm === 0 && shuttleSplits === 0}
+              disabled={isSubmitting || (validReps === 0 && jumpHeightCm === 0 && shuttleSplits === 0)}
               className="px-4 py-2.5 rounded-lg bg-orange-600 hover:bg-orange-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md shadow-orange-600/20"
             >
               <Award className="w-4 h-4" />
@@ -463,7 +531,7 @@ export default function CameraWorkoutEngine() {
           </div>
         </div>
 
-        {/* Right: Live Biometric HUD & Assessment Telemetry */}
+        {/* Right: Live Biometric HUD & Asymmetry Report */}
         <div className="lg:col-span-4 flex flex-col gap-4">
           {/* Rep Counter Metric Card */}
           <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-lg">
@@ -511,49 +579,100 @@ export default function CameraWorkoutEngine() {
             </div>
           </div>
 
-          {/* Verification Protocol Checkpoints */}
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-lg text-xs space-y-3">
-            <h4 className="font-bold text-white text-sm flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-orange-400" />
-              Khelo India Integrity Rules
-            </h4>
-
-            <div className="flex items-start gap-2 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-              <span>Depth Check: Elbow / Knee angle must breach &lt;90° plane</span>
-            </div>
-
-            <div className="flex items-start gap-2 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-              <span>Collinearity: Shoulder, hip, and ankle deviation &lt;20°</span>
-            </div>
-
-            <div className="flex items-start gap-2 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-              <span>Cadence Verification: Cross-referenced with Wearable HR</span>
-            </div>
-          </div>
-
-          {/* Verification Certificate Result Modal / Card */}
-          {verificationResult && (
-            <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-4 shadow-lg text-xs animate-in fade-in">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold mb-2">
-                <ShieldCheck className="w-4 h-4" />
-                SAI Khelo India Certificate Issued
+          {/* Real-Time Kinetic Asymmetry & Injury Risk Card */}
+          {asymmetryReport && (
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 shadow-lg text-xs space-y-2.5">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <HeartPulse className="w-3.5 h-3.5 text-blue-400" />
+                  Bilateral Symmetry
+                </span>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                    asymmetryReport.injuryRiskTier === 'LOW'
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                  }`}
+                >
+                  {asymmetryReport.injuryRiskTier} INJURY RISK
+                </span>
               </div>
+
+              <div className="flex items-center justify-between text-slate-300">
+                <span>Kinetic Balance:</span>
+                <span className="font-bold text-white">{asymmetryReport.symmetryScorePct}%</span>
+              </div>
+
+              <div className="flex items-center justify-between text-slate-300">
+                <span>Left vs Right Angle:</span>
+                <span className="font-mono text-slate-400">
+                  L: {asymmetryReport.leftAngleDeg}° | R: {asymmetryReport.rightAngleDeg}° (Δ{asymmetryReport.bilateralDeltaDeg}°)
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-400 italic">
+                {asymmetryReport.clinicalFeedback}
+              </p>
+            </div>
+          )}
+
+          {/* Verification Certificate Result Card */}
+          {verificationResult && (
+            <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-4 shadow-lg text-xs animate-in fade-in space-y-3">
+              <div className="flex items-center justify-between text-emerald-400 font-bold">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" />
+                  SAI Khelo India Certified
+                </span>
+                <span className="text-[10px] font-mono text-emerald-300">
+                  +{verificationResult.verification.ufpPointsAwarded} UFP
+                </span>
+              </div>
+
               <div className="space-y-1 text-slate-300">
                 <div>Status: <span className="font-bold text-white">{verificationResult.verification.status}</span></div>
-                <div>Form Accuracy: <span className="font-bold text-white">{verificationResult.verification.formAccuracyPct}%</span></div>
-                <div>UFP Points: <span className="font-bold text-orange-400">+{verificationResult.verification.ufpPointsAwarded} pts</span></div>
                 <div>Talent Tier: <span className="font-bold text-amber-300">{verificationResult.kheloIndiaEvaluation.talentTier}</span></div>
-                <div className="text-[10px] text-slate-500 truncate mt-2">
-                  HMAC: {verificationResult.verification.hmacSignature.slice(0, 24)}...
-                </div>
+                <div>Percentile: <span className="font-bold text-white">{verificationResult.kheloIndiaEvaluation.percentileRank}th</span></div>
               </div>
+
+              <button
+                onClick={() => setShowPassport(true)}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors shadow-md"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                View Khelo India Talent Passport
+              </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Talent Passport Modal */}
+      <TalentPassportModal
+        isOpen={showPassport}
+        onClose={() => setShowPassport(false)}
+        athlete={{
+          id: "ATH-LIVE-USER-01",
+          kheloIndiaId: "KI-2026-LIVE-001",
+          name: "Dhanush Kathir",
+          age: 17,
+          gender: "M",
+          state: "Haryana",
+          district: "Bhiwani",
+          institution: "FitFlow National Training Center",
+          compositeScore: verificationResult ? verificationResult.kheloIndiaEvaluation.compositeScore : 96.4,
+          verificationStatus: "Verified",
+          isHighPotential: true,
+          metrics: verificationResult ? verificationResult.kheloIndiaEvaluation.pillarScores : {
+            upperBodyStrength: 96,
+            coreStrength: 92,
+            lowerBodyPower: 98,
+            agility: 94,
+            speed: 95,
+          },
+          certifiedHash: verificationResult ? verificationResult.verification.hmacSignature : undefined,
+        }}
+      />
     </div>
   );
 }
