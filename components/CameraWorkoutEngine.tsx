@@ -771,7 +771,7 @@ export default function CameraWorkoutEngine() {
                       }}
                       className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs flex items-center gap-2 transition-all"
                     >
-                      <Sparkles className="w-4 h-4 text-amber-400" /> Launch 3D Muscle Simulator
+                      <Sparkles className="w-4 h-4 text-amber-400" /> Launch AI Animated Simulator
                     </button>
                   </div>
                 </div>
@@ -880,10 +880,10 @@ export default function CameraWorkoutEngine() {
                   }
                 }}
                 className="px-3.5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-700 shadow-sm"
-                title="Switch between Live Webcam and 3D Anatomical Muscle Simulator"
+                title="Switch between Live Webcam and AI Animated Exercise Simulator"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>{simMode ? 'Switch to Live Webcam' : 'Switch to 3D Muscle Simulator'}</span>
+                <span>{simMode ? 'Switch to Live Webcam' : 'Switch to AI Animated Simulator'}</span>
               </button>
             </div>
 
