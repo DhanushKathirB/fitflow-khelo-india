@@ -25,6 +25,7 @@ import { PoseAnalyzer, Landmark3D, POSE_LANDMARKS } from '@/lib/vision/poseAnaly
 import { globalVoiceCoach } from '@/lib/audio/voiceCoach';
 import { AsymmetryDetector, AsymmetryReport } from '@/lib/vision/asymmetryDetector';
 import TalentPassportModal from '@/components/TalentPassportModal';
+import AnatomicalFigureSimulator from '@/components/AnatomicalFigureSimulator';
 
 type ExerciseType = 'pushup' | 'squat' | 'vertical_jump' | 'shuttle_run';
 
@@ -692,129 +693,142 @@ export default function CameraWorkoutEngine() {
 
       {/* Main Vision Stage */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left: Video / Skeleton Canvas Feed */}
+        {/* Left: Video / Skeleton Canvas Feed OR Anatomical Figure Simulator */}
         <div className="lg:col-span-8 flex flex-col">
-          <div className="relative aspect-[4/3] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-inner flex items-center justify-center">
-            {/* Live Camera Video (Mirrored for natural mirror-like athletic movement) */}
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className={`absolute inset-0 w-full h-full object-cover transform -scale-x-100 ${
-                !isCameraActive || simMode ? 'hidden' : ''
-              }`}
+          {isCameraActive && simMode ? (
+            <AnatomicalFigureSimulator
+              exercise={exercise}
+              currentAngle={currentAngle}
+              validReps={validReps}
+              totalReps={totalReps}
+              formFeedback={formFeedback}
+              isFormValid={isFormValid}
+              jumpHeightCm={jumpHeightCm}
+              shuttleSplits={shuttleSplits}
             />
-
-            {/* Biometric Skeleton Overlay Canvas (mirrored identically to align with video) */}
-            <canvas
-              ref={canvasRef}
-              width={640}
-              height={480}
-              className={`absolute inset-0 w-full h-full object-contain pointer-events-none z-10 ${
-                !simMode ? 'transform -scale-x-100' : ''
-              }`}
-            />
-
-            {!isCameraActive && (
-              <div className="text-center p-6 z-20">
-                <Video className="w-12 h-12 text-slate-600 mx-auto mb-3 animate-pulse" />
-                <h3 className="font-bold text-white text-base">Camera Inactive</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
-                  Connect your webcam for certified athletic form validation, or use AI Simulation mode to test with animated kinematics.
-                </p>
-
-                {availableDevices.length > 1 && (
-                  <div className="mb-4 max-w-xs mx-auto text-left">
-                    <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-                      Select Camera Device:
-                    </label>
-                    <select
-                      value={selectedDeviceId}
-                      onChange={(e) => setSelectedDeviceId(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-slate-200 focus:outline-none"
-                    >
-                      {availableDevices.map((d, i) => (
-                        <option key={d.deviceId || i} value={d.deviceId}>
-                          {d.label || `Camera ${i + 1}`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap justify-center gap-3">
-                  <button
-                    onClick={() => startCamera()}
-                    className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg text-xs flex items-center gap-2 transition-all shadow-md shadow-orange-600/20"
-                  >
-                    <Camera className="w-4 h-4" /> Start Webcam
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSimMode(true);
-                      setIsCameraActive(true);
-                      setCameraError(null);
-                    }}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs flex items-center gap-2 transition-all"
-                  >
-                    <Sparkles className="w-4 h-4 text-amber-400" /> Launch AI Simulation
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* In-Frame Live Rep / Angle Overlay */}
-            {isCameraActive && (
-              <div className="absolute top-3 left-3 z-30 flex flex-col gap-2">
-                <div className="bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 shadow-lg">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Joint Angle</span>
-                  <div className="text-lg font-black text-white">{currentAngle}°</div>
-                </div>
-
-                <div className="bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 shadow-lg">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase">Elapsed</span>
-                  <div className="text-sm font-bold text-amber-400">{elapsedSeconds}s</div>
-                </div>
-
-                {!simMode && (
-                  <div className="bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-md border border-slate-700/60 flex items-center gap-1.5">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        isDetectingPerson ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'
-                      }`}
-                    />
-                    <span className="text-[10px] font-bold text-slate-300">
-                      {isDetectingPerson ? 'Athlete Locked' : 'Searching Body'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Form Guidance Toast Banner */}
-            {isCameraActive && (
-              <div
-                className={`absolute bottom-3 left-3 right-3 z-30 px-3.5 py-2 rounded-lg text-xs font-semibold backdrop-blur-md border flex items-center justify-between transition-colors ${
-                  isFormValid
-                    ? 'bg-slate-900/90 border-emerald-500/40 text-emerald-300'
-                    : 'bg-rose-950/90 border-rose-500/50 text-rose-200'
+          ) : (
+            <div className="relative aspect-[4/3] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-inner flex items-center justify-center">
+              {/* Live Camera Video (Mirrored for natural mirror-like athletic movement) */}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`absolute inset-0 w-full h-full object-cover transform -scale-x-100 ${
+                  !isCameraActive || simMode ? 'hidden' : ''
                 }`}
-              >
-                <div className="flex items-center gap-2">
-                  {isFormValid ? (
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  ) : (
-                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+              />
+
+              {/* Biometric Skeleton Overlay Canvas (mirrored identically to align with video) */}
+              <canvas
+                ref={canvasRef}
+                width={640}
+                height={480}
+                className={`absolute inset-0 w-full h-full object-contain pointer-events-none z-10 ${
+                  !simMode ? 'transform -scale-x-100' : ''
+                }`}
+              />
+
+              {!isCameraActive && (
+                <div className="text-center p-6 z-20">
+                  <Video className="w-12 h-12 text-slate-600 mx-auto mb-3 animate-pulse" />
+                  <h3 className="font-bold text-white text-base">Camera Inactive</h3>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
+                    Connect your webcam for certified athletic form validation, or use AI Simulation mode to test with animated kinematics.
+                  </p>
+
+                  {availableDevices.length > 1 && (
+                    <div className="mb-4 max-w-xs mx-auto text-left">
+                      <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                        Select Camera Device:
+                      </label>
+                      <select
+                        value={selectedDeviceId}
+                        onChange={(e) => setSelectedDeviceId(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-xs text-slate-200 focus:outline-none"
+                      >
+                        {availableDevices.map((d, i) => (
+                          <option key={d.deviceId || i} value={d.deviceId}>
+                            {d.label || `Camera ${i + 1}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
-                  <span>{formFeedback}</span>
+
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <button
+                      onClick={() => startCamera()}
+                      className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-lg text-xs flex items-center gap-2 transition-all shadow-md shadow-orange-600/20"
+                    >
+                      <Camera className="w-4 h-4" /> Start Webcam
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSimMode(true);
+                        setIsCameraActive(true);
+                        setCameraError(null);
+                      }}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-lg text-xs flex items-center gap-2 transition-all"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-400" /> Launch 3D Muscle Simulator
+                    </button>
+                  </div>
                 </div>
-                <span className="text-[10px] uppercase font-bold text-slate-400">
-                  {simMode ? 'AI Kinematic Generator' : 'MediaPipe Vision Live'}
-                </span>
-              </div>
-            )}
-          </div>
+              )}
+
+              {/* In-Frame Live Rep / Angle Overlay */}
+              {isCameraActive && (
+                <div className="absolute top-3 left-3 z-30 flex flex-col gap-2">
+                  <div className="bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 shadow-lg">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Joint Angle</span>
+                    <div className="text-lg font-black text-white">{currentAngle}°</div>
+                  </div>
+
+                  <div className="bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-700/60 shadow-lg">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Elapsed</span>
+                    <div className="text-sm font-bold text-amber-400">{elapsedSeconds}s</div>
+                  </div>
+
+                  {!simMode && (
+                    <div className="bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-md border border-slate-700/60 flex items-center gap-1.5">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          isDetectingPerson ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'
+                        }`}
+                      />
+                      <span className="text-[10px] font-bold text-slate-300">
+                        {isDetectingPerson ? 'Athlete Locked' : 'Searching Body'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Form Guidance Toast Banner */}
+              {isCameraActive && (
+                <div
+                  className={`absolute bottom-3 left-3 right-3 z-30 px-3.5 py-2 rounded-lg text-xs font-semibold backdrop-blur-md border flex items-center justify-between transition-colors ${
+                    isFormValid
+                      ? 'bg-slate-900/90 border-emerald-500/40 text-emerald-300'
+                      : 'bg-rose-950/90 border-rose-500/50 text-rose-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {isFormValid ? (
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-rose-400" />
+                    )}
+                    <span>{formFeedback}</span>
+                  </div>
+                  <span className="text-[10px] uppercase font-bold text-slate-400">
+                    {simMode ? 'AI Kinematic Generator' : 'MediaPipe Vision Live'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Action Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
@@ -865,11 +879,11 @@ export default function CameraWorkoutEngine() {
                     setIsCameraActive(true);
                   }
                 }}
-                className="px-3 py-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors flex items-center gap-1.5"
-                title="Switch between Live Webcam and Simulated AI Kinematics"
+                className="px-3.5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-colors flex items-center gap-1.5 border border-slate-700 shadow-sm"
+                title="Switch between Live Webcam and 3D Anatomical Muscle Simulator"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>{simMode ? 'Switch to Live Webcam' : 'Switch to AI Simulator'}</span>
+                <span>{simMode ? 'Switch to Live Webcam' : 'Switch to 3D Muscle Simulator'}</span>
               </button>
             </div>
 
