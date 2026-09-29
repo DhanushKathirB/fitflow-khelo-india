@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    activity_type VARCHAR(50) NOT NULL,
+    exercise_type VARCHAR(50) NOT NULL DEFAULT 'pushup', -- pushup, situp, squat, vertical_jump, shuttle_run
+    activity_type VARCHAR(50) NOT NULL DEFAULT 'pushup', -- backwards-compatible alias
     duration INT NOT NULL, -- Duration in seconds
     total_reps INT NOT NULL DEFAULT 0,
     valid_reps INT NOT NULL DEFAULT 0,
@@ -82,8 +83,9 @@ CREATE TABLE IF NOT EXISTS fitness_tests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     test_type test_type_enum NOT NULL,
-    raw_score NUMERIC(8, 2) NOT NULL, -- reps, jump height in cm, shuttle run seconds
-    unit VARCHAR(20) NOT NULL, -- 'reps', 'cm', 'sec'
+    score NUMERIC(8, 2) NOT NULL, -- score achieved (reps, height cm, or time in sec)
+    raw_score NUMERIC(8, 2), -- original raw reading
+    unit VARCHAR(20) NOT NULL DEFAULT 'reps', -- 'reps', 'cm', 'sec'
     benchmark_percentile NUMERIC(5, 2) NOT NULL DEFAULT 0.0 CHECK (benchmark_percentile BETWEEN 0 AND 100),
     verification_status verification_status_enum NOT NULL DEFAULT 'Self-Reported',
     evaluated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
