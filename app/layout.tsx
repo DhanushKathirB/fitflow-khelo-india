@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { LogIn } from "lucide-react";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,8 +20,8 @@ export default function RootLayout({
         {/* Universal Top Navigation Header */}
         <nav className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-orange-500/20">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform">
                 F
               </div>
               <div>
@@ -30,7 +32,7 @@ export default function RootLayout({
                   Fit India • Khelo India Digital Protocol
                 </span>
               </div>
-            </div>
+            </Link>
 
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300">
@@ -38,9 +40,13 @@ export default function RootLayout({
                 <span className="font-semibold text-emerald-400">SAI Live Certified</span>
               </div>
 
-              <div className="px-3 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 text-xs font-bold text-orange-400">
-                Localhost Server Active
-              </div>
+              <Link
+                href="/signin"
+                className="px-3.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold transition-all shadow-md shadow-orange-600/20 flex items-center gap-1.5"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Sign In</span>
+              </Link>
             </div>
           </div>
         </nav>
