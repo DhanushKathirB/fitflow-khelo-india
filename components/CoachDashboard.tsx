@@ -23,8 +23,11 @@ import {
   ChevronRight,
   TrendingUp,
   MapPin,
-  UserCheck
+  UserCheck,
+  QrCode,
+  SlidersHorizontal
 } from 'lucide-react';
+import TalentPassportModal from '@/components/TalentPassportModal';
 
 export interface AthleteRecord {
   id: string;
@@ -35,10 +38,10 @@ export interface AthleteRecord {
   district: string;
   institution: string;
   verificationStatus: 'Verified' | 'Partially Verified' | 'Self-Reported';
-  compositeScore: number; // 0-100
+  compositeScore: number;
   isHighPotential: boolean;
   metrics: {
-    upperBodyStrength: number; // Centile 0-100
+    upperBodyStrength: number;
     coreStrength: number;
     lowerBodyPower: number;
     agility: number;
@@ -54,7 +57,6 @@ export interface AthleteRecord {
   lastAssessed: string;
 }
 
-// Mock dataset representing talent pool from various Indian states and districts
 const SAMPLE_ATHLETES: AthleteRecord[] = [
   {
     id: "ATH-2026-091",
@@ -67,20 +69,8 @@ const SAMPLE_ATHLETES: AthleteRecord[] = [
     verificationStatus: "Verified",
     compositeScore: 97.4,
     isHighPotential: true,
-    metrics: {
-      upperBodyStrength: 98,
-      coreStrength: 95,
-      lowerBodyPower: 99,
-      agility: 94,
-      speed: 96,
-    },
-    rawValues: {
-      pushups: 54,
-      situps: 52,
-      verticalJumpCm: 68,
-      shuttleRunSec: 9.3,
-      sprint50mSec: 6.7,
-    },
+    metrics: { upperBodyStrength: 98, coreStrength: 95, lowerBodyPower: 99, agility: 94, speed: 96 },
+    rawValues: { pushups: 54, situps: 52, verticalJumpCm: 68, shuttleRunSec: 9.3, sprint50mSec: 6.7 },
     lastAssessed: "2026-09-24",
   },
   {
@@ -94,20 +84,8 @@ const SAMPLE_ATHLETES: AthleteRecord[] = [
     verificationStatus: "Verified",
     compositeScore: 96.1,
     isHighPotential: true,
-    metrics: {
-      upperBodyStrength: 94,
-      coreStrength: 98,
-      lowerBodyPower: 95,
-      agility: 97,
-      speed: 93,
-    },
-    rawValues: {
-      pushups: 38,
-      situps: 46,
-      verticalJumpCm: 54,
-      shuttleRunSec: 10.4,
-      sprint50mSec: 7.3,
-    },
+    metrics: { upperBodyStrength: 94, coreStrength: 98, lowerBodyPower: 95, agility: 97, speed: 93 },
+    rawValues: { pushups: 38, situps: 46, verticalJumpCm: 54, shuttleRunSec: 10.4, sprint50mSec: 7.3 },
     lastAssessed: "2026-09-22",
   },
   {
@@ -121,20 +99,8 @@ const SAMPLE_ATHLETES: AthleteRecord[] = [
     verificationStatus: "Verified",
     compositeScore: 91.2,
     isHighPotential: false,
-    metrics: {
-      upperBodyStrength: 88,
-      coreStrength: 90,
-      lowerBodyPower: 93,
-      agility: 89,
-      speed: 92,
-    },
-    rawValues: {
-      pushups: 42,
-      situps: 44,
-      verticalJumpCm: 60,
-      shuttleRunSec: 9.9,
-      sprint50mSec: 7.1,
-    },
+    metrics: { upperBodyStrength: 88, coreStrength: 90, lowerBodyPower: 93, agility: 89, speed: 92 },
+    rawValues: { pushups: 42, situps: 44, verticalJumpCm: 60, shuttleRunSec: 9.9, sprint50mSec: 7.1 },
     lastAssessed: "2026-09-20",
   },
   {
@@ -148,48 +114,9 @@ const SAMPLE_ATHLETES: AthleteRecord[] = [
     verificationStatus: "Partially Verified",
     compositeScore: 88.5,
     isHighPotential: false,
-    metrics: {
-      upperBodyStrength: 82,
-      coreStrength: 89,
-      lowerBodyPower: 90,
-      agility: 92,
-      speed: 86,
-    },
-    rawValues: {
-      pushups: 28,
-      situps: 38,
-      verticalJumpCm: 48,
-      shuttleRunSec: 11.0,
-      sprint50mSec: 7.8,
-    },
+    metrics: { upperBodyStrength: 82, coreStrength: 89, lowerBodyPower: 90, agility: 92, speed: 86 },
+    rawValues: { pushups: 28, situps: 38, verticalJumpCm: 48, shuttleRunSec: 11.0, sprint50mSec: 7.8 },
     lastAssessed: "2026-09-18",
-  },
-  {
-    id: "ATH-2026-215",
-    name: "Rohan Kadam",
-    age: 17,
-    gender: "M",
-    state: "Maharashtra",
-    district: "Pune",
-    institution: "Balewadi Krida Prabodhini",
-    verificationStatus: "Self-Reported",
-    compositeScore: 84.0,
-    isHighPotential: false,
-    metrics: {
-      upperBodyStrength: 85,
-      coreStrength: 80,
-      lowerBodyPower: 86,
-      agility: 84,
-      speed: 82,
-    },
-    rawValues: {
-      pushups: 36,
-      situps: 35,
-      verticalJumpCm: 52,
-      shuttleRunSec: 10.6,
-      sprint50mSec: 7.5,
-    },
-    lastAssessed: "2026-09-15",
   },
   {
     id: "ATH-2026-304",
@@ -202,30 +129,10 @@ const SAMPLE_ATHLETES: AthleteRecord[] = [
     verificationStatus: "Verified",
     compositeScore: 95.8,
     isHighPotential: true,
-    metrics: {
-      upperBodyStrength: 96,
-      coreStrength: 94,
-      lowerBodyPower: 97,
-      agility: 93,
-      speed: 95,
-    },
-    rawValues: {
-      pushups: 36,
-      situps: 42,
-      verticalJumpCm: 52,
-      shuttleRunSec: 10.5,
-      sprint50mSec: 7.4,
-    },
+    metrics: { upperBodyStrength: 96, coreStrength: 94, lowerBodyPower: 97, agility: 93, speed: 95 },
+    rawValues: { pushups: 36, situps: 42, verticalJumpCm: 52, shuttleRunSec: 10.5, sprint50mSec: 7.4 },
     lastAssessed: "2026-09-26",
   },
-];
-
-const NATIONAL_BENCHMARK_RADAR = [
-  { subject: 'Upper Body', nationalAvg: 50, eliteMin: 85 },
-  { subject: 'Core Strength', nationalAvg: 50, eliteMin: 85 },
-  { subject: 'Lower Body', nationalAvg: 50, eliteMin: 85 },
-  { subject: 'Agility', nationalAvg: 50, eliteMin: 85 },
-  { subject: 'Speed', nationalAvg: 50, eliteMin: 85 },
 ];
 
 export default function CoachDashboard() {
@@ -234,23 +141,18 @@ export default function CoachDashboard() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>(SAMPLE_ATHLETES[0].id);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [minPushups, setMinPushups] = useState<number>(0);
+  const [minVerticalJump, setMinVerticalJump] = useState<number>(0);
+  const [maxShuttleRun, setMaxShuttleRun] = useState<number>(15);
   const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [passportAthlete, setPassportAthlete] = useState<AthleteRecord | null>(null);
 
-  // Extract unique states and districts
-  const uniqueStates = useMemo(() => {
-    return Array.from(new Set(SAMPLE_ATHLETES.map((a) => a.state)));
-  }, []);
-
+  const uniqueStates = useMemo(() => Array.from(new Set(SAMPLE_ATHLETES.map((a) => a.state))), []);
   const availableDistricts = useMemo(() => {
-    if (selectedState === 'ALL') {
-      return Array.from(new Set(SAMPLE_ATHLETES.map((a) => a.district)));
-    }
-    return Array.from(
-      new Set(SAMPLE_ATHLETES.filter((a) => a.state === selectedState).map((a) => a.district))
-    );
+    if (selectedState === 'ALL') return Array.from(new Set(SAMPLE_ATHLETES.map((a) => a.district)));
+    return Array.from(new Set(SAMPLE_ATHLETES.filter((a) => a.state === selectedState).map((a) => a.district)));
   }, [selectedState]);
 
-  // Filtered athlete cohort
   const filteredAthletes = useMemo(() => {
     return SAMPLE_ATHLETES.filter((a) => {
       const matchState = selectedState === 'ALL' || a.state === selectedState;
@@ -263,52 +165,36 @@ export default function CoachDashboard() {
         statusFilter === 'ALL' ||
         (statusFilter === 'VERIFIED_ONLY' && a.verificationStatus === 'Verified') ||
         (statusFilter === 'HIGH_POTENTIAL' && a.isHighPotential);
+      const matchPushups = a.rawValues.pushups >= minPushups;
+      const matchVerticalJump = a.rawValues.verticalJumpCm >= minVerticalJump;
+      const matchShuttleRun = a.rawValues.shuttleRunSec <= maxShuttleRun;
 
-      return matchState && matchDistrict && matchSearch && matchStatus;
+      return (
+        matchState &&
+        matchDistrict &&
+        matchSearch &&
+        matchStatus &&
+        matchPushups &&
+        matchVerticalJump &&
+        matchShuttleRun
+      );
     });
-  }, [selectedState, selectedDistrict, searchQuery, statusFilter]);
+  }, [selectedState, selectedDistrict, searchQuery, statusFilter, minPushups, minVerticalJump, maxShuttleRun]);
 
   const selectedAthlete = useMemo(() => {
     return SAMPLE_ATHLETES.find((a) => a.id === selectedAthleteId) || SAMPLE_ATHLETES[0];
   }, [selectedAthleteId]);
 
-  // Radar chart data for currently selected athlete vs National Average
   const radarChartData = useMemo(() => {
     return [
-      {
-        subject: 'Upper Body',
-        athleteScore: selectedAthlete.metrics.upperBodyStrength,
-        nationalAvg: 50,
-        eliteMin: 85,
-      },
-      {
-        subject: 'Core Strength',
-        athleteScore: selectedAthlete.metrics.coreStrength,
-        nationalAvg: 50,
-        eliteMin: 85,
-      },
-      {
-        subject: 'Lower Body',
-        athleteScore: selectedAthlete.metrics.lowerBodyPower,
-        nationalAvg: 50,
-        eliteMin: 85,
-      },
-      {
-        subject: 'Agility',
-        athleteScore: selectedAthlete.metrics.agility,
-        nationalAvg: 50,
-        eliteMin: 85,
-      },
-      {
-        subject: 'Speed',
-        athleteScore: selectedAthlete.metrics.speed,
-        nationalAvg: 50,
-        eliteMin: 85,
-      },
+      { subject: 'Upper Body', athleteScore: selectedAthlete.metrics.upperBodyStrength, nationalAvg: 50, eliteMin: 85 },
+      { subject: 'Core Strength', athleteScore: selectedAthlete.metrics.coreStrength, nationalAvg: 50, eliteMin: 85 },
+      { subject: 'Lower Body', athleteScore: selectedAthlete.metrics.lowerBodyPower, nationalAvg: 50, eliteMin: 85 },
+      { subject: 'Agility', athleteScore: selectedAthlete.metrics.agility, nationalAvg: 50, eliteMin: 85 },
+      { subject: 'Speed', athleteScore: selectedAthlete.metrics.speed, nationalAvg: 50, eliteMin: 85 },
     ];
   }, [selectedAthlete]);
 
-  // Handler to export scout dossier
   const handleGenerateScoutReport = (athlete: AthleteRecord) => {
     setIsExporting(true);
     setTimeout(() => {
@@ -336,61 +222,48 @@ export default function CoachDashboard() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    }, 600);
+    }, 500);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
-      {/* Top Header */}
-      <header className="mb-8 border-b border-slate-800 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl text-slate-100 font-sans">
+      <header className="mb-6 border-b border-slate-800 pb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <span className="px-2.5 py-1 text-xs font-bold uppercase rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 text-xs font-bold uppercase rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30">
               Khelo India Protocol
             </span>
-            <span className="px-2.5 py-1 text-xs font-bold uppercase rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              AI Verification Active
+            <span className="px-2.5 py-0.5 text-xs font-bold uppercase rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              SAI Certified
             </span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight mt-2 text-white flex items-center gap-2">
-            FitFlow Coach & Talent Scouting Portal
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Sports Authority of India (SAI) Regional Talent Pipeline & Multi-Modal Verification
+          <h2 className="text-xl md:text-2xl font-black text-white mt-1">
+            Coach & Talent Scouting Portal
+          </h2>
+          <p className="text-xs text-slate-400">
+            Automated athletic identification using age and gender normalized Khelo India centiles.
           </p>
         </div>
 
-        {/* Aggregate Stats */}
         <div className="flex items-center gap-3">
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-center min-w-[100px]">
-            <div className="text-xs text-slate-400">Total Scouts</div>
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center min-w-[100px]">
+            <div className="text-[11px] text-slate-400">Athletes</div>
             <div className="text-xl font-bold text-white">{SAMPLE_ATHLETES.length}</div>
           </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-center min-w-[100px]">
-            <div className="text-xs text-slate-400">Top 5% Elite</div>
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center min-w-[100px]">
+            <div className="text-[11px] text-slate-400">Top 5% Elite</div>
             <div className="text-xl font-bold text-amber-400">
               {SAMPLE_ATHLETES.filter((a) => a.isHighPotential).length}
-            </div>
-          </div>
-          <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-center min-w-[100px]">
-            <div className="text-xs text-slate-400">Verified Ratio</div>
-            <div className="text-xl font-bold text-emerald-400">
-              {Math.round(
-                (SAMPLE_ATHLETES.filter((a) => a.verificationStatus === "Verified").length /
-                  SAMPLE_ATHLETES.length) *
-                  100
-              )}%
             </div>
           </div>
         </div>
       </header>
 
       {/* Filter and Search Bar */}
-      <section className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 mb-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[280px]">
-          {/* State Filter */}
-          <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-lg border border-slate-800 text-sm">
-            <MapPin className="w-4 h-4 text-orange-400" />
+      <section className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+          <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+            <MapPin className="w-3.5 h-3.5 text-orange-400" />
             <select
               value={selectedState}
               onChange={(e) => {
@@ -408,9 +281,8 @@ export default function CoachDashboard() {
             </select>
           </div>
 
-          {/* District Filter */}
-          <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-lg border border-slate-800 text-sm">
-            <Filter className="w-4 h-4 text-blue-400" />
+          <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+            <Filter className="w-3.5 h-3.5 text-blue-400" />
             <select
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
@@ -425,9 +297,8 @@ export default function CoachDashboard() {
             </select>
           </div>
 
-          {/* Status Filter */}
-          <div className="flex items-center gap-2 bg-slate-950 px-3 py-2 rounded-lg border border-slate-800 text-sm">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+          <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -440,40 +311,129 @@ export default function CoachDashboard() {
           </div>
         </div>
 
-        {/* Search Field */}
-        <div className="relative min-w-[240px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+        <div className="relative min-w-[220px]">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
-            placeholder="Search by name, academy, or ID..."
+            placeholder="Search athlete or academy..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
+            className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500"
           />
         </div>
       </section>
 
-      {/* Main Grid: Athlete Table (Left) + Radar Biometrics (Right) */}
+      {/* Metric Filters: Push-up reps, Vertical jump height, Shuttle run time */}
+      <section className="bg-slate-950/90 border border-slate-800 rounded-xl p-4 mb-6 shadow-inner">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs font-bold text-slate-300 flex items-center gap-2">
+            <SlidersHorizontal className="w-4 h-4 text-orange-400" />
+            <span>Khelo India Performance Metric Filters (Form-Verified Benchmarks)</span>
+          </div>
+          {(minPushups > 0 || minVerticalJump > 0 || maxShuttleRun < 15) && (
+            <button
+              onClick={() => {
+                setMinPushups(0);
+                setMinVerticalJump(0);
+                setMaxShuttleRun(15);
+              }}
+              className="text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors"
+            >
+              Reset Metric Filters
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+          {/* Push-up Reps Filter */}
+          <div className="bg-slate-900/90 p-3 rounded-lg border border-slate-800/80">
+            <div className="flex justify-between items-center text-xs mb-1.5">
+              <span className="text-slate-400 font-medium">Min Push-Up Reps:</span>
+              <span className="font-extrabold text-orange-400">{minPushups} reps</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="60"
+              step="2"
+              value={minPushups}
+              onChange={(e) => setMinPushups(Number(e.target.value))}
+              className="w-full accent-orange-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+            />
+            <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+              <span>0 (Any)</span>
+              <span>30 (National)</span>
+              <span>60 (Elite)</span>
+            </div>
+          </div>
+
+          {/* Vertical Jump Height Filter */}
+          <div className="bg-slate-900/90 p-3 rounded-lg border border-slate-800/80">
+            <div className="flex justify-between items-center text-xs mb-1.5">
+              <span className="text-slate-400 font-medium">Min Vertical Jump:</span>
+              <span className="font-extrabold text-amber-400">{minVerticalJump} cm</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="70"
+              step="2"
+              value={minVerticalJump}
+              onChange={(e) => setMinVerticalJump(Number(e.target.value))}
+              className="w-full accent-amber-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+            />
+            <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+              <span>0 cm</span>
+              <span>45 cm (State)</span>
+              <span>70 cm (Olympic)</span>
+            </div>
+          </div>
+
+          {/* Shuttle Run Time Filter */}
+          <div className="bg-slate-900/90 p-3 rounded-lg border border-slate-800/80">
+            <div className="flex justify-between items-center text-xs mb-1.5">
+              <span className="text-slate-400 font-medium">Max Shuttle Run Time:</span>
+              <span className="font-extrabold text-emerald-400">{maxShuttleRun}s</span>
+            </div>
+            <input
+              type="range"
+              min="8.5"
+              max="15"
+              step="0.1"
+              value={maxShuttleRun}
+              onChange={(e) => setMaxShuttleRun(Number(e.target.value))}
+              className="w-full accent-emerald-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+            />
+            <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+              <span>&le; 8.5s (Elite)</span>
+              <span>&le; 11s (Good)</span>
+              <span>15s (All)</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Athlete Candidates Table */}
-        <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg flex flex-col">
+        {/* Table */}
+        <div className="lg:col-span-7 bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-lg flex flex-col">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-            <h2 className="font-bold text-white text-lg flex items-center gap-2">
-              <UserCheck className="w-5 h-5 text-orange-400" />
+            <h3 className="font-bold text-white text-sm flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-orange-400" />
               Scouted Athletes ({filteredAthletes.length})
-            </h2>
-            <span className="text-xs text-slate-400">Click row to inspect biometric radar</span>
+            </h3>
+            <span className="text-[11px] text-slate-400">Select athlete to inspect radar</span>
           </div>
 
           <div className="overflow-x-auto flex-1">
-            <table className="w-full text-left text-sm text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-800">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="bg-slate-900/80 text-slate-400 uppercase tracking-wider border-b border-slate-800">
                 <tr>
-                  <th className="px-4 py-3">Athlete</th>
-                  <th className="px-4 py-3">Region</th>
-                  <th className="px-4 py-3 text-center">Talent Score</th>
-                  <th className="px-4 py-3 text-center">Verification</th>
-                  <th className="px-4 py-3 text-right">Action</th>
+                  <th className="px-4 py-2.5">Athlete</th>
+                  <th className="px-4 py-2.5">District</th>
+                  <th className="px-4 py-2.5 text-center">Score</th>
+                  <th className="px-4 py-2.5 text-center">Status</th>
+                  <th className="px-4 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
@@ -484,66 +444,62 @@ export default function CoachDashboard() {
                       key={athlete.id}
                       onClick={() => setSelectedAthleteId(athlete.id)}
                       className={`cursor-pointer transition-colors ${
-                        isSelected ? 'bg-orange-500/10' : 'hover:bg-slate-800/60'
+                        isSelected ? 'bg-orange-500/10' : 'hover:bg-slate-900/60'
                       }`}
                     >
-                      <td className="px-4 py-3.5">
-                        <div className="font-semibold text-white flex items-center gap-2">
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-white flex items-center gap-1.5">
                           {athlete.name}
                           {athlete.isHighPotential && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                               TOP 5%
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-slate-400 truncate max-w-[180px]">
+                        <div className="text-[11px] text-slate-500 truncate max-w-[170px]">
                           {athlete.institution}
                         </div>
                       </td>
 
-                      <td className="px-4 py-3.5 text-xs text-slate-300">
-                        <div>{athlete.district}</div>
-                        <div className="text-slate-500">{athlete.state}</div>
+                      <td className="px-4 py-3 text-slate-400">
+                        {athlete.district}, {athlete.state}
                       </td>
 
-                      <td className="px-4 py-3.5 text-center">
-                        <div className="text-base font-extrabold text-white">
-                          {athlete.compositeScore}
+                      <td className="px-4 py-3 text-center">
+                        <div className="font-extrabold text-white text-sm">{athlete.compositeScore}</div>
+                        <div className="text-[9px] text-slate-500">Centile</div>
+                      </td>
+
+                      <td className="px-4 py-3 text-center">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          {athlete.verificationStatus}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPassportAthlete(athlete);
+                            }}
+                            className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+                            title="View Khelo India Digital Passport"
+                          >
+                            <QrCode className="w-3.5 h-3.5 text-orange-400" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleGenerateScoutReport(athlete);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-orange-600/20 hover:bg-orange-600 border border-orange-500/30 text-orange-300 hover:text-white text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-sm"
+                            title="Export Official Scout Profile (CSV)"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>Export Scout Profile</span>
+                          </button>
                         </div>
-                        <div className="text-[10px] text-slate-400">SAI Centile</div>
-                      </td>
-
-                      <td className="px-4 py-3.5 text-center">
-                        {athlete.verificationStatus === 'Verified' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <ShieldCheck className="w-3 h-3" />
-                            Verified
-                          </span>
-                        ) : athlete.verificationStatus === 'Partially Verified' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <Activity className="w-3 h-3" />
-                            Partial
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                            <ShieldAlert className="w-3 h-3" />
-                            Self-Reported
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-4 py-3.5 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleGenerateScoutReport(athlete);
-                          }}
-                          className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-orange-500 hover:text-white text-xs font-medium text-slate-200 transition-colors inline-flex items-center gap-1.5"
-                          title="Download Official SAI Scout Card"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Scout Card</span>
-                        </button>
                       </td>
                     </tr>
                   );
@@ -553,138 +509,72 @@ export default function CoachDashboard() {
           </div>
         </div>
 
-        {/* Selected Athlete Talent Radar & Biometric Inspection (Right) */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          {/* Radar Chart Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-            <div className="flex items-start justify-between mb-4 border-b border-slate-800 pb-3">
+        {/* Selected Athlete Radar (Right) */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-lg">
+            <div className="flex items-start justify-between mb-3 border-b border-slate-800 pb-3">
               <div>
-                <div className="text-xs uppercase tracking-wider text-orange-400 font-bold">
+                <span className="text-[10px] uppercase font-bold text-orange-400 tracking-wider">
                   Talent Radar Analysis
-                </div>
-                <h3 className="text-xl font-bold text-white">{selectedAthlete.name}</h3>
-                <p className="text-xs text-slate-400">
-                  {selectedAthlete.age} yrs • {selectedAthlete.gender === 'M' ? 'Male' : 'Female'} •{' '}
+                </span>
+                <h4 className="text-lg font-black text-white">{selectedAthlete.name}</h4>
+                <div className="text-xs text-slate-400">
                   {selectedAthlete.district}, {selectedAthlete.state}
-                </p>
+                </div>
               </div>
 
               <div className="text-right">
                 <div className="text-2xl font-black text-orange-400">
                   {selectedAthlete.compositeScore}
                 </div>
-                <div className="text-[10px] text-slate-400">Composite Score</div>
+                <div className="text-[9px] text-slate-500 uppercase">Composite Centile</div>
               </div>
             </div>
 
-            {/* Radar Chart Container */}
-            <div className="w-full h-[280px]">
+            <div className="w-full h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarChartData}>
+                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarChartData}>
                   <PolarGrid stroke="#334155" />
-                  <PolarAngleAxis dataKey="subject" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#475569" />
-                  <Radar
-                    name="Athlete Centile"
-                    dataKey="athleteScore"
-                    stroke="#f97316"
-                    fill="#f97316"
-                    fillOpacity={0.4}
-                  />
-                  <Radar
-                    name="National Avg (P50)"
-                    dataKey="nationalAvg"
-                    stroke="#64748b"
-                    fill="#64748b"
-                    fillOpacity={0.1}
-                    strokeDasharray="4 4"
-                  />
-                  <Radar
-                    name="Elite Threshold (P85)"
-                    dataKey="eliteMin"
-                    stroke="#10b981"
-                    fill="transparent"
-                    strokeDasharray="3 3"
-                  />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#0f172a',
-                      borderColor: '#334155',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                    }}
-                  />
+                  <PolarAngleAxis dataKey="subject" stroke="#94a3b8" tick={{ fontSize: 10 }} />
+                  <PolarRadiusAxis domain={[0, 100]} stroke="#475569" tick={{ fontSize: 9 }} />
+                  <Radar name="Athlete" dataKey="athleteScore" stroke="#f97316" fill="#f97316" fillOpacity={0.4} />
+                  <Radar name="National Avg" dataKey="nationalAvg" stroke="#64748b" fill="#64748b" fillOpacity={0.1} strokeDasharray="3 3" />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Raw Biometrics Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-4 pt-4 border-t border-slate-800 text-xs">
-              <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                <div className="text-slate-400">Push-ups (60s)</div>
-                <div className="text-sm font-bold text-white mt-0.5">
-                  {selectedAthlete.rawValues.pushups} reps
-                </div>
-                <div className="text-[10px] text-emerald-400">
-                  {selectedAthlete.metrics.upperBodyStrength}th centile
-                </div>
-              </div>
-
-              <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                <div className="text-slate-400">Sit-ups (60s)</div>
-                <div className="text-sm font-bold text-white mt-0.5">
-                  {selectedAthlete.rawValues.situps} reps
-                </div>
-                <div className="text-[10px] text-emerald-400">
-                  {selectedAthlete.metrics.coreStrength}th centile
-                </div>
-              </div>
-
-              <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                <div className="text-slate-400">Vertical Jump</div>
-                <div className="text-sm font-bold text-white mt-0.5">
-                  {selectedAthlete.rawValues.verticalJumpCm} cm
-                </div>
-                <div className="text-[10px] text-emerald-400">
-                  {selectedAthlete.metrics.lowerBodyPower}th centile
-                </div>
-              </div>
-
-              <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                <div className="text-slate-400">4x10m Shuttle</div>
-                <div className="text-sm font-bold text-white mt-0.5">
-                  {selectedAthlete.rawValues.shuttleRunSec}s
-                </div>
-                <div className="text-[10px] text-emerald-400">
-                  {selectedAthlete.metrics.agility}th centile
-                </div>
-              </div>
-
-              <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                <div className="text-slate-400">50m Sprint</div>
-                <div className="text-sm font-bold text-white mt-0.5">
-                  {selectedAthlete.rawValues.sprint50mSec}s
-                </div>
-                <div className="text-[10px] text-emerald-400">
-                  {selectedAthlete.metrics.speed}th centile
-                </div>
-              </div>
-
-              <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 flex flex-col justify-center">
-                <button
-                  onClick={() => handleGenerateScoutReport(selectedAthlete)}
-                  disabled={isExporting}
-                  className="w-full bg-orange-600 hover:bg-orange-500 text-white font-semibold py-1.5 px-2 rounded text-xs flex items-center justify-center gap-1 transition-colors"
-                >
-                  <Download className="w-3 h-3" />
-                  {isExporting ? 'Exporting...' : 'Export Dossier'}
-                </button>
-              </div>
+            {/* Actions: Export Scout Profile & Athlete Passport */}
+            <div className="mt-4 pt-3 border-t border-slate-800 flex flex-wrap justify-between items-center gap-2">
+              <button
+                onClick={() => handleGenerateScoutReport(selectedAthlete)}
+                disabled={isExporting}
+                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-sm"
+              >
+                <Download className="w-3.5 h-3.5 text-orange-400" />
+                {isExporting ? 'Exporting...' : 'Export Scout Profile'}
+              </button>
+              <button
+                onClick={() => setPassportAthlete(selectedAthlete)}
+                className="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors shadow-md shadow-orange-600/20"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                View Athlete Passport
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Talent Passport Modal */}
+      {passportAthlete && (
+        <TalentPassportModal
+          isOpen={!!passportAthlete}
+          onClose={() => setPassportAthlete(null)}
+          athlete={passportAthlete}
+        />
+      )}
     </div>
   );
 }
