@@ -1,0 +1,180 @@
+// Prisma schema for FitFlow — SQLite for hackathon, migrate to PostgreSQL for production
+// Maps the existing database/schema.sql entities to Prisma models
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── USERS ──────────────────────────────────────────────────────────────────────
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  age            Int
+  gender         String   // 'M', 'F', 'Other'
+  state          String   @default("Maharashtra")
+  district       String   @default("Pune")
+  role           String   @default("athlete") // 'athlete', 'coach', 'admin'
+  fitnessPoints  Int      @default(0)
+  xp             Int      @default(0)
+  level          Int      @default(1)
+  institution    String?
+  streakWeeks    Int      @default(0)
+  lastActiveWeek String?  // ISO week string e.g. "2026-W39" for streak tracking
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  workouts       Workout[]
+  fitnessTests   FitnessTest[]
+  talentProfile  TalentProfile?
+  personalBests  PersonalBest[]
+  matchesAsP1    Match[]        @relation("MatchPlayer1")
+  matchesAsP2    Match[]        @relation("MatchPlayer2")
+  matchesWon     Match[]        @relation("MatchWinner")
+
+  @@index([state, district])
+  @@index([role, fitnessPoints(sort: Desc)])
+  @@map("users")
+}
+
+// ─── WORKOUTS (Assessment Sessions with Anti-Cheat Telemetry) ───────────────
+model Workout {
+  id                 String   @id @default(cuid())
+  userId             String
+  exerciseType       String   // 'pushup', 'situp', 'squat', 'vertical_jump', 'shuttle_run'
+  durationSeconds    Int
+  totalReps          Int      @default(0)
+  validReps          Int      @default(0)
+  rawScore           Float    @default(0) // primary metric value (reps, cm, seconds)
+  formAccuracy       Float    @default(0) // validReps/totalReps * 100
+  verificationStatus String   @default("Self-Reported") // 'Verified', 'Partially Verified', 'Self-Reported', 'Flagged'
+
+  // Evidence payload (sent by client, evaluated by server)
+  landmarkConsistency Float?  // % of frames with good landmark detection
+  avgFrameRate        Float?  // average camera FPS during session
+  repTimestamps       String? // JSON array of rep completion timestamps (ms)
+  sessionQuality      String? // 'HIGH', 'ADEQUATE', 'POOR'
+
+  // Verification metadata
+  telemetryHash      String?  // HMAC-SHA256 signature
+  verificationFlags  String?  // JSON array of specific concerns
+
+  // Scoring
+  ufpScore           Float    @default(0) // Unified Fitness Points (percentile-based)
+  benchmarkPercentile Float   @default(0) // demographic percentile
+
+  createdAt          DateTime @default(now())
+
+  // Relations
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchResultP1      Match?   @relation("MatchResult1")
+  matchResultP2      Match?   @relation("MatchResult2")
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([exerciseType])
+  @@map("workouts")
+}
+
+// ─── FITNESS TESTS (Khelo India Protocol Submissions) ───────────────────────
+model FitnessTest {
+  id                  String   @id @default(cuid())
+  userId              String
+  testType            String   // 'pushup', 'situp', 'squat', 'vertical_jump', 'shuttle_run'
+  score               Float    // score achieved (reps, height cm, or time in sec)
+  rawScore            Float?   // original raw reading
+  unit                String   @default("reps") // 'reps', 'cm', 'sec'
+  benchmarkPercentile Float    @default(0)
+  verificationStatus  String   @default("Self-Reported")
+  evaluatedAt         DateTime @default(now())
+
+  // Relations
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, testType])
+  @@map("fitness_tests")
+}
+
+// ─── TALENT PROFILES (Scouting & Khelo India Pipeline) ──────────────────────
+model TalentProfile {
+  id                    String   @id @default(cuid())
+  athleteId             String   @unique
+  agilityScore          Float    @default(0)
+  strengthScore         Float    @default(0)
+  enduranceScore        Float    @default(0)
+  speedScore            Float    @default(0)
+  explosivePowerScore   Float    @default(0)
+  compositeTalentScore  Float    @default(0)
+  isHighPotential       Boolean  @default(false)
+  scoutStatus           String   @default("Prospect") // 'Prospect', 'State_Camp_Eligible', 'National_Talent_Pool', 'Under_Review'
+  scoutNotes            String?
+  lastUpdated           DateTime @default(now())
+
+  // Relations
+  athlete               User     @relation(fields: [athleteId], references: [id], onDelete: Cascade)
+
+  @@index([isHighPotential, compositeTalentScore(sort: Desc)])
+  @@map("talent_profiles")
+}
+
+// ─── PERSONAL BESTS ─────────────────────────────────────────────────────────
+model PersonalBest {
+  id           String   @id @default(cuid())
+  userId       String
+  exerciseType String   // 'pushup', 'situp', 'squat', 'vertical_jump', 'shuttle_run'
+  bestScore    Float    // best valid reps, height cm, or time sec
+  bestUfp      Float    @default(0) // best UFP score
+  achievedAt   DateTime @default(now())
+  workoutId    String?  // reference to the workout where this was achieved
+
+  // Relations
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exerciseType])
+  @@map("personal_bests")
+}
+
+// ─── MATCHES (1v1 Async Competitions) ───────────────────────────────────────
+model Match {
+  id              String   @id @default(cuid())
+  player1Id       String
+  player2Id       String?  // null until opponent accepts
+  result1Id       String?  @unique // challenger's workout result
+  result2Id       String?  @unique // opponent's workout result
+  exerciseP1      String   // exercise chosen by player 1
+  exerciseP2      String?  // exercise chosen by player 2
+  ufpP1           Float    @default(0)
+  ufpP2           Float    @default(0)
+  winnerId        String?
+  status          String   @default("OPEN") // 'OPEN', 'IN_PROGRESS', 'COMPLETED', 'EXPIRED'
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  // Relations
+  player1         User     @relation("MatchPlayer1", fields: [player1Id], references: [id])
+  player2         User?    @relation("MatchPlayer2", fields: [player2Id], references: [id])
+  winner          User?    @relation("MatchWinner", fields: [winnerId], references: [id])
+  result1         Workout? @relation("MatchResult1", fields: [result1Id], references: [id])
+  result2         Workout? @relation("MatchResult2", fields: [result2Id], references: [id])
+
+  @@map("matches")
+}
+
+// ─── BENCHMARKS (Reference Data for Percentile Calculation) ─────────────────
+model Benchmark {
+  id           String @id @default(cuid())
+  exerciseType String // 'pushup', 'situp', 'squat', 'vertical_jump', 'shuttle_run'
+  ageMin       Int    // lower bound of age range
+  ageMax       Int    // upper bound of age range
+  gender       String // 'M', 'F'
+  mean         Float  // population mean
+  stdDev       Float  // population standard deviation
+  unit         String @default("reps") // 'reps', 'cm', 'sec'
+
+  @@unique([exerciseType, ageMin, ageMax, gender])
+  @@map("benchmarks")
+}
