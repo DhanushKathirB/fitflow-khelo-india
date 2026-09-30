@@ -120,7 +120,7 @@ export default function LiveBattleLeaderboard() {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl text-slate-100">
+    <div className="bg-slate-900/90 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl text-slate-100">
       {/* Tab Switcher */}
       <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 mb-6 gap-3">
         <div className="flex flex-wrap gap-2">
