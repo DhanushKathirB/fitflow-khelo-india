@@ -144,11 +144,19 @@ export default function CameraWorkoutEngine() {
     const initMediaPipe = async () => {
       if (typeof window === 'undefined') return;
       try {
-        const { Pose } = await import('@mediapipe/pose');
+        const mpPose = await import('@mediapipe/pose');
         if (!isMounted) return;
 
-        const pose = new Pose({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+        // Handle Next.js / Webpack production module bundling differences
+        const PoseConstructor = mpPose.Pose || (mpPose as any).default?.Pose || (window as any).Pose;
+
+        if (!PoseConstructor) {
+          console.error("Could not find Pose constructor in module", mpPose);
+          return;
+        }
+
+        const pose = new PoseConstructor({
+          locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/${file}`,
         });
 
         pose.setOptions({
